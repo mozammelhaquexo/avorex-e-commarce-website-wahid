@@ -1,47 +1,55 @@
-import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
+import { NextRequest, NextResponse } from "next/server";
+import { getPrisma } from "@/utils/db";
 
-const getFilePath = () => path.join(process.cwd(), "src/data/categories.json");
+const DEFAULT_CATEGORIES = [
+  { en: "Carburetors", bn: "কার্বুরেটর" },
+  { en: "Spark Plugs", bn: "স্পার্ক প্লাগ" },
+  { en: "Pistons", bn: "পিস্টন" },
+  { en: "Gas Valves", bn: "ভালভ ও লাইন" },
+  { en: "Filters", bn: "ফিল্টার" },
+  { en: "Accessories", bn: "অন্যান্য" },
+];
 
-const readCategories = () => {
-  const filePath = getFilePath();
-  if (!fs.existsSync(filePath)) {
-    const defaults = [
-      { en: "Carburetors", bn: "কার্বুরেটর" },
-      { en: "Spark Plugs", bn: "স্পার্ক প্লাগ" },
-      { en: "Pistons", bn: "পিস্টন" },
-      { en: "Gas Valves", bn: "ভালভ ও লাইন" },
-      { en: "Filters", bn: "ফিল্টার" },
-      { en: "Accessories", bn: "অন্যান্য" }
-    ];
-    const dir = path.dirname(filePath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    fs.writeFileSync(filePath, JSON.stringify(defaults, null, 2), "utf-8");
-    return defaults;
+async function getCategories(prisma: any) {
+  const setting = await prisma.siteSettings.findUnique({ where: { key: "categories" } });
+  if (!setting) {
+    await prisma.siteSettings.create({
+      data: { key: "categories", value: JSON.stringify(DEFAULT_CATEGORIES) },
+    });
+    return DEFAULT_CATEGORIES;
   }
-  const content = fs.readFileSync(filePath, "utf-8");
-  return JSON.parse(content);
-};
+  return JSON.parse(setting.value);
+}
+
+async function saveCategories(prisma: any, categories: any[]) {
+  await prisma.siteSettings.upsert({
+    where: { key: "categories" },
+    update: { value: JSON.stringify(categories) },
+    create: { key: "categories", value: JSON.stringify(categories) },
+  });
+}
 
 export async function GET() {
   try {
-    const list = readCategories();
+    const prisma = await getPrisma();
+    const list = await getCategories(prisma);
     return NextResponse.json(list);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+    const prisma = await getPrisma();
     const { nameBn, nameEn } = await req.json();
+
     if (!nameBn) {
       return NextResponse.json({ error: "Category name is required" }, { status: 400 });
     }
-    const list = readCategories();
+
+    const list = await getCategories(prisma);
     const en = nameEn || nameBn;
     const bn = nameBn;
 
@@ -53,25 +61,30 @@ export async function POST(req: Request) {
     }
 
     list.push({ en, bn });
-    fs.writeFileSync(getFilePath(), JSON.stringify(list, null, 2), "utf-8");
+    await saveCategories(prisma, list);
     return NextResponse.json({ success: true, categories: list });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
-export async function DELETE(req: Request) {
+export async function DELETE(req: NextRequest) {
   try {
+    const prisma = await getPrisma();
     const { searchParams } = new URL(req.url);
     const en = searchParams.get("en");
+
     if (!en) {
       return NextResponse.json({ error: "Category name identifier is required" }, { status: 400 });
     }
-    const list = readCategories();
+
+    const list = await getCategories(prisma);
     const filtered = list.filter((c: any) => c.en !== en);
-    fs.writeFileSync(getFilePath(), JSON.stringify(filtered, null, 2), "utf-8");
+    await saveCategories(prisma, filtered);
     return NextResponse.json({ success: true, categories: filtered });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

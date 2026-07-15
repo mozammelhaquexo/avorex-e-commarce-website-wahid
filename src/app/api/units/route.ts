@@ -1,74 +1,89 @@
-import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
+import { NextRequest, NextResponse } from "next/server";
+import { getPrisma } from "@/utils/db";
 
-const getFilePath = () => path.join(process.cwd(), "src/data/units.json");
+const DEFAULT_UNITS = [
+  { id: "pcs", en: "pcs", bn: "পিস" },
+  { id: "kg", en: "kg", bn: "কেজি" },
+  { id: "set", en: "set", bn: "সেট" },
+  { id: "box", en: "box", bn: "বক্স" },
+  { id: "meter", en: "meter", bn: "মিটার" },
+  { id: "liter", en: "liter", bn: "লিটার" },
+];
 
-const readUnits = () => {
-  const filePath = getFilePath();
-  if (!fs.existsSync(filePath)) {
-    const defaults = [
-      { id: "pcs", en: "pcs", bn: "পিস" },
-      { id: "kg", en: "kg", bn: "কেজি" },
-      { id: "set", en: "set", bn: "সেট" },
-      { id: "box", en: "box", bn: "বক্স" },
-      { id: "meter", en: "meter", bn: "মিটার" },
-      { id: "liter", en: "liter", bn: "লিটার" }
-    ];
-    const dir = path.dirname(filePath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    fs.writeFileSync(filePath, JSON.stringify(defaults, null, 2), "utf-8");
-    return defaults;
+async function getUnits(prisma: any) {
+  const setting = await prisma.siteSettings.findUnique({ where: { key: "units" } });
+  if (!setting) {
+    await prisma.siteSettings.create({
+      data: { key: "units", value: JSON.stringify(DEFAULT_UNITS) },
+    });
+    return DEFAULT_UNITS;
   }
-  const content = fs.readFileSync(filePath, "utf-8");
-  return JSON.parse(content);
-};
+  return JSON.parse(setting.value);
+}
+
+async function saveUnits(prisma: any, units: any[]) {
+  await prisma.siteSettings.upsert({
+    where: { key: "units" },
+    update: { value: JSON.stringify(units) },
+    create: { key: "units", value: JSON.stringify(units) },
+  });
+}
 
 export async function GET() {
   try {
-    const list = readUnits();
+    const prisma = await getPrisma();
+    const list = await getUnits(prisma);
     return NextResponse.json(list);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+    const prisma = await getPrisma();
     const { name } = await req.json();
+
     if (!name) {
       return NextResponse.json({ error: "Unit name is required" }, { status: 400 });
     }
-    const list = readUnits();
+
+    const list = await getUnits(prisma);
     const id = name.toLowerCase().replace(/\s+/g, "-");
+
     const exists = list.some(
       (u: any) => u.id === id || u.bn.toLowerCase() === name.toLowerCase()
     );
     if (exists) {
       return NextResponse.json({ error: "Unit already exists" }, { status: 400 });
     }
+
     list.push({ id, en: name, bn: name });
-    fs.writeFileSync(getFilePath(), JSON.stringify(list, null, 2), "utf-8");
+    await saveUnits(prisma, list);
     return NextResponse.json({ success: true, units: list });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
-export async function DELETE(req: Request) {
+export async function DELETE(req: NextRequest) {
   try {
+    const prisma = await getPrisma();
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
+
     if (!id) {
       return NextResponse.json({ error: "Unit identifier is required" }, { status: 400 });
     }
-    const list = readUnits();
+
+    const list = await getUnits(prisma);
     const filtered = list.filter((u: any) => u.id !== id);
-    fs.writeFileSync(getFilePath(), JSON.stringify(filtered, null, 2), "utf-8");
+    await saveUnits(prisma, filtered);
     return NextResponse.json({ success: true, units: filtered });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
