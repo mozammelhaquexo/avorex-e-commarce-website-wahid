@@ -1,0 +1,86 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "sqlite"
+  url       = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("ADMIN")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id            String   @id @default(uuid())
+  nameEn        String
+  nameBn        String
+  descriptionEn String
+  descriptionBn String
+  price         Float
+  stock         Int
+  images        String
+  categoryEn    String
+  categoryBn    String
+  sku           String?
+  unit          String?
+  tags          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([categoryEn])
+  @@index([nameEn])
+  @@index([sku])
+}
+
+model Order {
+  id              String   @id @default(uuid())
+  orderNumber     String   @unique
+  customerName    String
+  customerPhone   String
+  customerAddress String
+  items           String
+  totalAmount     Float
+  paymentMethod   String
+  status          String   @default("PENDING")
+  trackingId      String?
+  trackingCourier String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status])
+  @@index([customerPhone])
+  @@index([createdAt])
+}
+
+model CustomRequest {
+  id           String   @id @default(uuid())
+  customerName String
+  phone        String
+  partName     String
+  partDetails  String
+  status       String   @default("PENDING")
+  createdAt    DateTime @default(now())
+
+  @@index([status])
+}
+
+model WhatsAppSettings {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model SiteSettings {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
