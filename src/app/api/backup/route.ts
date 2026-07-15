@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/utils/db";
+import { getPrisma } from "@/utils/db";
 import { readdir, readFile, writeFile, mkdir, unlink, stat } from "fs/promises";
 import { existsSync } from "fs";
 import path from "path";
@@ -106,6 +106,7 @@ export async function POST(req: NextRequest) {
   await ensureBackupDir();
 
   try {
+    const prisma = await getPrisma();
     const [products, orders, customRequests, whatsappSettings, siteSettings] =
       await Promise.all([
         prisma.product.findMany(),

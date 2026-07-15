@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/utils/db";
+import { getPrisma } from "@/utils/db";
 
 // GET: Handle Google OAuth callback
 export async function GET(req: NextRequest) {
+  const prisma = await getPrisma();
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");
   const error = searchParams.get("error");

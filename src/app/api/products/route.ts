@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/utils/db";
+import { getPrisma } from "@/utils/db";
 import { getAdminUserFromRequest } from "@/utils/auth";
 
 // Public: Get products with pagination + search
 export async function GET(req: NextRequest) {
   try {
+    const prisma = await getPrisma();
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "50");
@@ -52,6 +53,7 @@ export async function GET(req: NextRequest) {
 // Protected: Add a new product
 export async function POST(req: NextRequest) {
   try {
+    const prisma = await getPrisma();
     const admin = getAdminUserFromRequest(req);
     if (!admin) {
       return NextResponse.json({ error: "Unauthorized access" }, { status: 401 });

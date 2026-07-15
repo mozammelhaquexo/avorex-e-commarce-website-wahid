@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/utils/db";
+import { getPrisma } from "@/utils/db";
 
 // Default message templates
 const DEFAULT_MESSAGES: Record<string, string> = {
@@ -83,6 +83,7 @@ const DEFAULT_MESSAGES: Record<string, string> = {
 // GET: Fetch all WhatsApp settings
 export async function GET() {
   try {
+    const prisma = await getPrisma();
     let settings = await prisma.whatsAppSettings.findMany();
 
     // If no settings exist, initialize with defaults
@@ -111,6 +112,7 @@ export async function GET() {
 // PUT: Update WhatsApp settings (bulk)
 export async function PUT(req: NextRequest) {
   try {
+    const prisma = await getPrisma();
     const { settings } = await req.json();
 
     if (!settings || !Array.isArray(settings)) {
@@ -138,6 +140,7 @@ export async function PUT(req: NextRequest) {
 // DELETE: Reset WhatsApp settings to defaults
 export async function DELETE() {
   try {
+    const prisma = await getPrisma();
     // Delete all existing settings
     await prisma.whatsAppSettings.deleteMany();
     

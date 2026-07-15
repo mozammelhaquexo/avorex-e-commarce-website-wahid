@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import prisma from "@/utils/db";
+import { getPrisma } from "@/utils/db";
 
 export async function POST() {
   try {
+    const prisma = await getPrisma();
     // Create tables first using raw SQL
     await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "User" (

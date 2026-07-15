@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/utils/db";
+import { getPrisma } from "@/utils/db";
 import { getAdminUserFromRequest } from "@/utils/auth";
 
 interface RouteParams {
@@ -9,6 +9,7 @@ interface RouteParams {
 // Protected: Update order details (Status, Tracking)
 export async function PUT(req: NextRequest, { params }: RouteParams) {
   try {
+    const prisma = await getPrisma();
     const admin = getAdminUserFromRequest(req);
     if (!admin) {
       return NextResponse.json({ error: "Unauthorized access" }, { status: 401 });
@@ -56,6 +57,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
 // Protected: Delete an order
 export async function DELETE(req: NextRequest, { params }: RouteParams) {
   try {
+    const prisma = await getPrisma();
     const admin = getAdminUserFromRequest(req);
     if (!admin) {
       return NextResponse.json({ error: "Unauthorized access" }, { status: 401 });

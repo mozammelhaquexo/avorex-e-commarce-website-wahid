@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/utils/db";
+import { getPrisma } from "@/utils/db";
 
 // GET: Fetch Google Drive settings
 export async function GET() {
   try {
+    const prisma = await getPrisma();
     const settings = await prisma.siteSettings.findMany({
       where: {
         key: {
@@ -32,6 +33,7 @@ export async function GET() {
 // PUT: Save Google Drive settings
 export async function PUT(req: NextRequest) {
   try {
+    const prisma = await getPrisma();
     const { clientId, clientSecret, refreshToken, folderId, connected } = await req.json();
 
     const upserts = [

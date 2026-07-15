@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/utils/db";
+import { getPrisma } from "@/utils/db";
 
 // POST: Exchange auth code for refresh token
 export async function POST(req: NextRequest) {
   try {
+    const prisma = await getPrisma();
     const { code, clientId, clientSecret } = await req.json();
 
     if (!code || !clientId || !clientSecret) {

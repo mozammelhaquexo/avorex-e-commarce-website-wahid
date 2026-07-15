@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/utils/db";
+import { getPrisma } from "@/utils/db";
 import { getAdminUserFromRequest } from "@/utils/auth";
 
 export async function GET(req: NextRequest) {
   try {
+    const prisma = await getPrisma();
     const admin = getAdminUserFromRequest(req);
     if (!admin) {
       return NextResponse.json({ authenticated: false }, { status: 401 });

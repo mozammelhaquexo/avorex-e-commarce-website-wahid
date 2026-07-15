@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import prisma from "@/utils/db";
+import { getPrisma } from "@/utils/db";
 import { signToken } from "@/utils/auth";
 
-async function ensureSeeded() {
+async function ensureSeeded(prisma: Awaited<ReturnType<typeof getPrisma>>) {
   try {
     await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "User" (
@@ -109,6 +109,7 @@ async function ensureSeeded() {
 
 export async function POST(req: NextRequest) {
   try {
+    const prisma = await getPrisma();
     const { email, password } = await req.json();
 
     if (!email || !password) {
@@ -118,7 +119,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    await ensureSeeded();
+    await ensureSeeded(prisma);
 
     const user = await prisma.user.findUnique({
       where: { email },

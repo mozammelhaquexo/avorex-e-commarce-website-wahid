@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/utils/db";
+import { getPrisma } from "@/utils/db";
 
 const DEFAULT_SETTINGS: Record<string, string> = {
   "business_name": "AL MAKKA ENTERPRISE",
@@ -19,6 +19,7 @@ const DEFAULT_SETTINGS: Record<string, string> = {
 // GET: Fetch all site settings
 export async function GET() {
   try {
+    const prisma = await getPrisma();
     let settings = await prisma.siteSettings.findMany();
 
     if (settings.length === 0) {
@@ -44,6 +45,7 @@ export async function GET() {
 // PUT: Update site settings (bulk)
 export async function PUT(req: NextRequest) {
   try {
+    const prisma = await getPrisma();
     const { settings } = await req.json();
 
     if (!settings || !Array.isArray(settings)) {
@@ -70,6 +72,7 @@ export async function PUT(req: NextRequest) {
 // DELETE: Reset site settings to defaults
 export async function DELETE() {
   try {
+    const prisma = await getPrisma();
     await prisma.siteSettings.deleteMany();
 
     const defaultEntries = Object.entries(DEFAULT_SETTINGS).map(([key, value]) => ({

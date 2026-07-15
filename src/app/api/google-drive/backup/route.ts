@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/utils/db";
+import { getPrisma } from "@/utils/db";
 import { readFile, readdir, mkdir } from "fs/promises";
 import { existsSync } from "fs";
 import path from "path";
@@ -69,6 +69,7 @@ async function findOrCreateFolder(accessToken: string, folderName: string): Prom
 
 // Create backup data
 async function createBackupData() {
+  const prisma = await getPrisma();
   const [products, orders, customRequests, whatsappSettings, siteSettings] = await Promise.all([
     prisma.product.findMany(),
     prisma.order.findMany(),
@@ -126,6 +127,7 @@ function getFormattedFileName(): string {
 // POST: Backup to Google Drive
 export async function POST(req: NextRequest) {
   try {
+    const prisma = await getPrisma();
     const { clientId, clientSecret } = await req.json();
 
     if (!clientId || !clientSecret) {
@@ -213,6 +215,7 @@ export async function POST(req: NextRequest) {
 // GET: List backups from Google Drive
 export async function GET(req: NextRequest) {
   try {
+    const prisma = await getPrisma();
     const { searchParams } = new URL(req.url);
     const action = searchParams.get("action");
 

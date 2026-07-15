@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/utils/db";
+import { getPrisma } from "@/utils/db";
 import { writeFile, mkdir } from "fs/promises";
 import { existsSync } from "fs";
 import path from "path";
@@ -7,6 +7,7 @@ import path from "path";
 // POST: Restore from a backup (uploaded as JSON)
 export async function POST(req: NextRequest) {
   try {
+    const prisma = await getPrisma();
     const formData = await req.formData();
     const file = formData.get("backup") as File | null;
     const mode = formData.get("mode") as string; // "full" or "merge"

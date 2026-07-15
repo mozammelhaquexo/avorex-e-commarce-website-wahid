@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/utils/db";
+import { getPrisma } from "@/utils/db";
 import { getAdminUserFromRequest } from "@/utils/auth";
 
 // Protected: Get all custom part requests (for Admin Dashboard)
 export async function GET(req: NextRequest) {
   try {
+    const prisma = await getPrisma();
     const admin = getAdminUserFromRequest(req);
     if (!admin) {
       return NextResponse.json({ error: "Unauthorized access" }, { status: 401 });
@@ -23,6 +24,7 @@ export async function GET(req: NextRequest) {
 // Public: Create a new custom part request
 export async function POST(req: NextRequest) {
   try {
+    const prisma = await getPrisma();
     const { customerName, phone, partName, partDetails } = await req.json();
 
     if (!customerName || !phone || !partName || !partDetails) {
