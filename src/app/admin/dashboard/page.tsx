@@ -66,7 +66,16 @@ export default function AdminDashboard() {
   const [newUnitName, setNewUnitName] = useState("");
 
   // Dashboard Tab State
-  const [activeTab, setActiveTab] = useState<"products" | "whatsapp" | "site-settings" | "backup">("products");
+  const [activeTab, setActiveTab] = useState<"products" | "whatsapp" | "site-settings" | "backup" | "security">("products");
+
+  // Security / Change Credentials State
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [securityLoading, setSecurityLoading] = useState(false);
+  const [securityMsg, setSecurityMsg] = useState("");
+  const [securityError, setSecurityError] = useState("");
 
   // WhatsApp Settings State
   const [whatsappSettings, setWhatsappSettings] = useState<Record<string, string>>({});
@@ -505,6 +514,54 @@ export default function AdminDashboard() {
     setPaymentMethods(paymentMethods.filter((m) => m !== method));
   };
 
+  // ===== SECURITY FUNCTIONS =====
+  const handleUpdateCredentials = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSecurityError("");
+    setSecurityMsg("");
+
+    if (!currentPassword) {
+      setSecurityError("Current password is required");
+      return;
+    }
+    if (!newEmail && !newPassword) {
+      setSecurityError("Provide new email or new password");
+      return;
+    }
+    if (newPassword && newPassword !== confirmPassword) {
+      setSecurityError("New password and confirmation do not match");
+      return;
+    }
+    if (newPassword && newPassword.length < 6) {
+      setSecurityError("Password must be at least 6 characters");
+      return;
+    }
+
+    setSecurityLoading(true);
+    try {
+      const res = await fetch("/api/auth/change-password", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newEmail: newEmail || undefined, newPassword: newPassword || undefined }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSecurityMsg("Credentials updated successfully! Use new credentials for next login.");
+        setCurrentPassword("");
+        setNewEmail("");
+        setNewPassword("");
+        setConfirmPassword("");
+        if (newEmail) setUser((prev: any) => prev ? { ...prev, email: newEmail } : prev);
+      } else {
+        setSecurityError(data.error || "Update failed");
+      }
+    } catch (err: any) {
+      setSecurityError(err.message || "Network error");
+    } finally {
+      setSecurityLoading(false);
+    }
+  };
+
   // ===== BACKUP FUNCTIONS =====
   const fetchBackups = async () => {
     setBackupLoading(true);
@@ -895,6 +952,17 @@ export default function AdminDashboard() {
           >
             <Database className="h-4 w-4" />
             Database & Backup
+          </button>
+          <button
+            onClick={() => setActiveTab("security")}
+            className={`flex items-center gap-2 px-6 py-3 rounded-t-xl text-sm font-bold uppercase tracking-wider transition-all border border-b-0 ${
+              activeTab === "security"
+                ? "bg-[#F9F6EE] border-warm-border/40 text-foreground"
+                : "bg-transparent border-transparent text-warm-muted hover:text-foreground hover:bg-warm-primary/5"
+            }`}
+          >
+            <ShieldAlert className="h-4 w-4" />
+            Security
           </button>
         </div>
       </section>
@@ -2003,6 +2071,92 @@ export default function AdminDashboard() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* SECURITY TAB */}
+      {activeTab === "security" && (
+        <main className="flex-1 max-w-[1650px] mx-auto w-full px-6 lg:px-12 pb-16">
+          <div className="space-y-6 pt-6">
+            <div className="flex items-center gap-3">
+              <ShieldAlert className="h-5 w-5 text-warm-primary" />
+              <h3 className="text-lg font-bold text-foreground">Change Login Credentials</h3>
+            </div>
+            <p className="text-sm text-warm-muted">
+              Update your admin email and password. Current password is required for verification.
+            </p>
+
+            <form onSubmit={handleUpdateCredentials} className="max-w-lg space-y-5 bg-white border border-warm-border/30 rounded-2xl p-6">
+              {/* Current Password */}
+              <div>
+                <label className="block text-xs font-bold text-foreground mb-1.5 uppercase tracking-wider">Current Password *</label>
+                <input
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-[#FAF6EE] border border-warm-border/40 rounded-xl text-sm focus:outline-none focus:border-warm-primary"
+                  required
+                />
+              </div>
+
+              {/* New Email */}
+              <div>
+                <label className="block text-xs font-bold text-foreground mb-1.5 uppercase tracking-wider">New Email</label>
+                <input
+                  type="email"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  placeholder={user?.email || "Leave blank to keep current"}
+                  className="w-full px-4 py-2.5 bg-[#FAF6EE] border border-warm-border/40 rounded-xl text-sm focus:outline-none focus:border-warm-primary"
+                />
+              </div>
+
+              {/* New Password */}
+              <div>
+                <label className="block text-xs font-bold text-foreground mb-1.5 uppercase tracking-wider">New Password</label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Leave blank to keep current"
+                  className="w-full px-4 py-2.5 bg-[#FAF6EE] border border-warm-border/40 rounded-xl text-sm focus:outline-none focus:border-warm-primary"
+                />
+              </div>
+
+              {/* Confirm Password */}
+              {newPassword && (
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-1.5 uppercase tracking-wider">Confirm New Password</label>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-[#FAF6EE] border border-warm-border/40 rounded-xl text-sm focus:outline-none focus:border-warm-primary"
+                  />
+                </div>
+              )}
+
+              {/* Error / Success Messages */}
+              {securityError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
+                  {securityError}
+                </div>
+              )}
+              {securityMsg && (
+                <div className="p-3 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm font-medium">
+                  {securityMsg}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={securityLoading}
+                className="w-full py-2.5 bg-warm-primary text-white font-bold text-sm rounded-xl hover:bg-warm-accent transition-colors disabled:opacity-50"
+              >
+                {securityLoading ? "Updating..." : "Update Credentials"}
+              </button>
+            </form>
+          </div>
+        </main>
       )}
 
     </div>
