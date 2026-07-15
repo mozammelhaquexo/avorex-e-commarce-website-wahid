@@ -309,7 +309,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ searchByName, searchBy
       if (!append) setLoading(true);
       else setLoadingMore(true);
 
-      const params = new URLSearchParams({ page: String(pageNum), limit: "50" });
+      const params = new URLSearchParams({ page: String(pageNum), limit: "48" });
       if (search) params.set("search", search);
       if (category && category !== "All") params.set("category", category);
 

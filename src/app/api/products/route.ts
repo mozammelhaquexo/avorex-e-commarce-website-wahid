@@ -2,7 +2,22 @@ import { NextRequest, NextResponse } from "next/server";
 import { getPrisma } from "@/utils/db";
 import { getAdminUserFromRequest } from "@/utils/auth";
 
-// Public: Get products with pagination + search
+const PRODUCT_SELECT = {
+  id: true,
+  nameEn: true,
+  nameBn: true,
+  descriptionEn: true,
+  descriptionBn: true,
+  price: true,
+  stock: true,
+  images: true,
+  categoryEn: true,
+  categoryBn: true,
+  sku: true,
+  unit: true,
+  createdAt: true,
+};
+
 export async function GET(req: NextRequest) {
   try {
     const prisma = await getPrisma();
@@ -20,7 +35,6 @@ export async function GET(req: NextRequest) {
         { nameEn: { contains: search } },
         { nameBn: { contains: search } },
         { sku: { contains: search } },
-        { categoryEn: { contains: search } },
       ];
     }
 
@@ -31,6 +45,7 @@ export async function GET(req: NextRequest) {
     const [products, total] = await Promise.all([
       prisma.product.findMany({
         where,
+        select: PRODUCT_SELECT,
         orderBy: { createdAt: "desc" },
         skip,
         take: limit,
@@ -38,19 +53,23 @@ export async function GET(req: NextRequest) {
       prisma.product.count({ where }),
     ]);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       products,
       total,
       page,
       totalPages: Math.ceil(total / limit),
     });
+
+    response.headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
+
+    return response;
   } catch (error: unknown) {
-    console.error("GET Products Error:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("GET Products Error:", message);
     return NextResponse.json({ error: "Failed to fetch products" }, { status: 500 });
   }
 }
 
-// Protected: Add a new product
 export async function POST(req: NextRequest) {
   try {
     const prisma = await getPrisma();
@@ -78,6 +97,7 @@ export async function POST(req: NextRequest) {
     }
 
     const product = await prisma.product.create({
+      select: PRODUCT_SELECT,
       data: {
         nameEn,
         nameBn,
@@ -95,7 +115,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, product });
   } catch (error: unknown) {
-    console.error("POST Product Error:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("POST Product Error:", message);
     return NextResponse.json({ error: "Failed to add product" }, { status: 500 });
   }
 }

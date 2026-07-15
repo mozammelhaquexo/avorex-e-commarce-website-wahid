@@ -57,6 +57,10 @@ export default function AdminDashboard() {
 
   // Admin Search Query
   const [adminSearchQuery, setAdminSearchQuery] = useState("");
+  const [adminPage, setAdminPage] = useState(1);
+  const [adminTotalPages, setAdminTotalPages] = useState(1);
+  const [adminTotal, setAdminTotal] = useState(0);
+  const [adminLoadingMore, setAdminLoadingMore] = useState(false);
 
   // New Category Form Fields
   const [newCatBn, setNewCatBn] = useState("");
@@ -122,7 +126,7 @@ export default function AdminDashboard() {
         setUser(data.user);
         
         // Fetch each independently — one failing won't block others
-        fetchAllData().catch(() => {});
+        fetchAllData(1, "", false).catch(() => {});
         fetchCategories().catch(() => {});
         fetchUnits().catch(() => {});
         fetchWhatsappSettings().catch(() => {});
@@ -136,6 +140,14 @@ export default function AdminDashboard() {
 
     checkAuth();
   }, [router]);
+
+  // Admin product search debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchAllData(1, adminSearchQuery, false).catch(() => {});
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [adminSearchQuery]);
 
   const fetchUnits = async () => {
     try {
@@ -245,15 +257,24 @@ export default function AdminDashboard() {
     }
   };
 
-  const fetchAllData = async () => {
+  const fetchAllData = async (pageNum = 1, search = "", append = false) => {
     try {
-      const prodRes = await fetch("/api/products?limit=9999");
+      if (append) setAdminLoadingMore(true);
+      const params = new URLSearchParams({ page: String(pageNum), limit: "100" });
+      if (search) params.set("search", search);
+      const prodRes = await fetch(`/api/products?${params}`);
       if (prodRes.ok) {
         const data = await prodRes.json();
-        setProducts(Array.isArray(data) ? data : data.products || []);
+        const items = Array.isArray(data) ? data : data.products || [];
+        setProducts(prev => append ? [...prev, ...items] : items);
+        setAdminPage(data.page || pageNum);
+        setAdminTotalPages(data.totalPages || 1);
+        setAdminTotal(data.total || items.length);
       }
     } catch (err) {
       console.error("Failed to load dashboard data", err);
+    } finally {
+      setAdminLoadingMore(false);
     }
   };
 
@@ -1025,17 +1046,6 @@ export default function AdminDashboard() {
                 </thead>
                 <tbody className="divide-y divide-warm-border/20 text-sm font-semibold">
                   {products
-                    .filter((p) => {
-                      const query = adminSearchQuery.toLowerCase().trim();
-                      if (!query) return true;
-                      return (
-                        (p.nameEn && p.nameEn.toLowerCase().includes(query)) ||
-                        (p.nameBn && p.nameBn.toLowerCase().includes(query)) ||
-                        (p.sku && p.sku.toLowerCase().includes(query)) ||
-                        (p.categoryEn && p.categoryEn.toLowerCase().includes(query)) ||
-                        (p.categoryBn && p.categoryBn.toLowerCase().includes(query))
-                      );
-                    })
                     .map((p) => (
                       <tr key={p.id} className="hover:bg-warm-primary/5 transition-colors">
                         <td className="p-6 lg:p-7">
@@ -1084,6 +1094,22 @@ export default function AdminDashboard() {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Product count + Load More */}
+            <div className="flex items-center justify-between pt-3">
+              <p className="text-sm text-warm-muted font-semibold">
+                Showing {products.length} of {adminTotal} products
+              </p>
+              {adminPage < adminTotalPages && (
+                <button
+                  onClick={() => fetchAllData(adminPage + 1, adminSearchQuery, true)}
+                  disabled={adminLoadingMore}
+                  className="px-6 py-2.5 bg-warm-primary/10 text-warm-primary rounded-xl text-sm font-bold hover:bg-warm-primary/20 transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  {adminLoadingMore ? "Loading..." : "Load More"}
+                </button>
+              )}
             </div>
             </>
           )}
