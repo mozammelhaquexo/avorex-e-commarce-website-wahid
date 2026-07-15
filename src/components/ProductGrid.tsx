@@ -588,7 +588,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ searchByName, searchBy
                       },
                       language === "bn"
                     );
-                    window.open(waLink, "_blank");
+                    window.location.href = waLink;
                   }}
                   disabled={selectedProduct.stock === 0}
                   className={`py-4 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-md ${

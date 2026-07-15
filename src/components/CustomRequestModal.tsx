@@ -58,12 +58,12 @@ export const CustomRequestModal: React.FC = () => {
       setPartDetails("");
       setIsOpen(false);
 
-      window.open(link, "_blank");
+      window.location.href = link;
     } catch (err: any) {
       console.error(err);
       // Fallback redirect if API route not configured yet
       const link = await getCustomRequestLink({ partName, partDetails, customerName: name, phone }, language === "bn");
-      window.open(link, "_blank");
+      window.location.href = link;
       setIsOpen(false);
     } finally {
       setLoading(false);

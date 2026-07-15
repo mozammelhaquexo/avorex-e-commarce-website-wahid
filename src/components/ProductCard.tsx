@@ -45,8 +45,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onDetailsOpen
         },
         language === "bn"
       );
-      window.open(waLink, "_blank");
-    } catch {}
+      window.location.href = waLink;
+    } catch (err) {
+      console.error("WhatsApp link failed:", err);
+    }
   }, [product.nameEn, product.nameBn, product.price, product.stock, language]);
 
   return (

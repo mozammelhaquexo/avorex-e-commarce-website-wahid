@@ -61,7 +61,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
       onClose();
 
       // Redirect to WhatsApp
-      window.open(waLink, "_blank");
+      window.location.href = waLink;
 
       // Clear local cart after successful redirect
       clearCart();
@@ -70,7 +70,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
       try {
         const customerInfo = { name, phone, address, paymentMethod };
         const waLink = await getCartOrderLink(cart, cartTotal, customerInfo, language === "bn");
-        window.open(waLink, "_blank");
+        window.location.href = waLink;
         clearCart();
       } catch {}
     } finally {
