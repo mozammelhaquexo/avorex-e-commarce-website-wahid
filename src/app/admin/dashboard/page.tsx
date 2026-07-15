@@ -281,7 +281,14 @@ export default function AdminDashboard() {
     setDesc(product.descriptionBn || product.descriptionEn);
     setPrice(product.price.toString());
     setStock(product.stock.toString());
-    setImageUrl(product.images || "");
+    let imgUrl = "";
+    try {
+      const parsed = JSON.parse(product.images || "[]");
+      imgUrl = Array.isArray(parsed) && parsed.length > 0 ? parsed[0] : (typeof parsed === "string" ? parsed : "");
+    } catch {
+      imgUrl = product.images || "";
+    }
+    setImageUrl(imgUrl);
     setCatEn(product.categoryEn);
     setCatBn(product.categoryBn);
     setSku(product.sku || "");
@@ -325,7 +332,7 @@ export default function AdminDashboard() {
       descriptionBn: desc,
       price: parseFloat(price),
       stock: parseInt(stock),
-      images: imageUrl,
+      images: imageUrl ? JSON.stringify([imageUrl]) : "[]",
       categoryEn: catEn,
       categoryBn: catBn,
       sku,

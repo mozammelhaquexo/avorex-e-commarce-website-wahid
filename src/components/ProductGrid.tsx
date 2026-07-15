@@ -317,11 +317,20 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ searchByName, searchBy
       if (!res.ok) throw new Error();
       const data = await res.json();
 
-      const formatted = (data.products || []).map((p: any) => ({
-        ...p,
-        images: p.images ? JSON.parse(p.images) : [],
-        tags: [p.categoryEn?.toLowerCase(), p.nameEn?.toLowerCase()],
-      }));
+      const formatted = (data.products || []).map((p: any) => {
+        let imgs: string[] = [];
+        try {
+          const parsed = JSON.parse(p.images || "[]");
+          imgs = Array.isArray(parsed) ? parsed : (typeof parsed === "string" ? [parsed] : []);
+        } catch {
+          imgs = p.images ? [p.images] : [];
+        }
+        return {
+          ...p,
+          images: imgs,
+          tags: [p.categoryEn?.toLowerCase(), p.nameEn?.toLowerCase()],
+        };
+      });
 
       setProducts(prev => append ? [...prev, ...formatted] : formatted);
       setTotalPages(data.totalPages || 1);
