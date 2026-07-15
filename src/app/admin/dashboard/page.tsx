@@ -112,12 +112,12 @@ export default function AdminDashboard() {
         const data = await res.json();
         setUser(data.user);
         
-        // Fetch product list, categories, and units
-        await fetchAllData();
-        await fetchCategories();
-        await fetchUnits();
-        await fetchWhatsappSettings();
-        await fetchSiteSettings();
+        // Fetch each independently — one failing won't block others
+        fetchAllData().catch(() => {});
+        fetchCategories().catch(() => {});
+        fetchUnits().catch(() => {});
+        fetchWhatsappSettings().catch(() => {});
+        fetchSiteSettings().catch(() => {});
       } catch (err) {
         router.push("/admin/login");
       } finally {
@@ -238,9 +238,10 @@ export default function AdminDashboard() {
 
   const fetchAllData = async () => {
     try {
-      const prodRes = await fetch("/api/products");
+      const prodRes = await fetch("/api/products?limit=9999");
       if (prodRes.ok) {
-        setProducts(await prodRes.json());
+        const data = await prodRes.json();
+        setProducts(Array.isArray(data) ? data : data.products || []);
       }
     } catch (err) {
       console.error("Failed to load dashboard data", err);
